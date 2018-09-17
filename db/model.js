@@ -19,7 +19,11 @@ var AuthToken_Schema = new Schema({
 
 var Gists_Schema = new Schema({
 	uid: String,
-	gist: String
+	gist: String,
+	owner: String,
+	desc: String,
+	filename: String,
+	language: String
 })
 
 var User_Details = mongoose.model('user_details',User_Details_Schema);

@@ -52,6 +52,9 @@ function allowUser(req,res,next) { // allow specific user only midleware
 
 router.post('/login', (req, res) => { // login 
 
+        console.log("Logging in...")
+        console.log(req.body)
+
         db.AuthToken.findOne({ username: req.body.username }).then(function(data) {
             if(!data) {
                 db.User_Details.findOne({username: req.body.username}).then(function(user){
@@ -74,13 +77,16 @@ router.post('/login', (req, res) => { // login
                                     id: user._id,
                                     username: user.data
                                 }).then(function(data) {
+                                    console.log("Success")
                                     res.send({
                                     success: true,
                                     message: 'token created',
                                     token: token,
                                     _id: user._id
+                                })
+                            }).catch(function(err){
+                                    res.send({success: false,error: err})
                                 });
-                            })
 
                             } else {
                                 res.send({success: false,message: 'Authentication failed. Wrong password.'})
@@ -90,11 +96,12 @@ router.post('/login', (req, res) => { // login
 
                 })
             } else {
-            	console.log(data)
-                db.User_Details.findOne({_id: data._id}).then(function(user) {
+            	console.log("data")
+                db.User_Details.findOne({_id: data.id}).then(function(user) {
                     bcrypt.compare(req.body.password,user.password).then(function(check) {
                         if(check) {
                           db.AuthToken.findOne({username: req.body.username}).then(function(data) {
+                            console.log("Success")
                             res.send({
                             	token: data.token , 
                             	success: true,
@@ -107,6 +114,8 @@ router.post('/login', (req, res) => { // login
                     })
                 })
             }
+        }).catch(function(err){
+           res.send({success: false,error: err}) 
         })
 
 });
@@ -205,10 +214,15 @@ router.post('/getGists',async (req,res) => {
 	res.send({success: true,data: result})
 });
 
-router.post('/star', (req,res) => {
+router.post('/star',allowUser, (req,res) => {
+    console.log(req.body)
 	db.Gists.create({
 		uid: req.body.uid,
-		gist: req.body.gist_url
+		gist: req.body.gist_url,
+        owner: req.body.owner,
+        desc: req.body.desc,
+        filename: req.body.filename,
+        language: req.body.language
 	}).then(function(data){
 		res.send({success: true})
 	}).catch(function(err){
@@ -216,7 +230,12 @@ router.post('/star', (req,res) => {
 	})
 });
 
-router.post('/mybucket',(req,res) => {
+router.post('/mybucket', allowUser , (req,res) => {
+
+    if(!req.body.uid) {
+        console.log("NO UID")
+        return res.status(403).send({success: false,message: 'No UID'})
+    }
 	db.Gists.find({uid: req.body.uid}).then(function(data){
 		res.send({success: true,stars: data})
 	}).catch(function(err){
